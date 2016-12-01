@@ -4,6 +4,10 @@
 #include <iostream>
 #include <boost/optional.hpp>
 
+// disable clang warning about hiding base virtual functions
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Woverloaded-virtual"
+
 namespace ast {
 
 class AstNodeVisitor;
@@ -15,25 +19,25 @@ class AstNodeVisitor;
 template <class T>
 struct tag
 {
-    using type=T;
+    using type = T;
 };
 
 template <class...Ts>
 struct types
 {
-    using type=types;
+    using type = types;
 };
 
 template <class T>
 struct AstVisitable {
-    virtual boost::optional<T> accept( tag<T>, AstNodeVisitor&v ) = 0;
-    virtual ~AstVisitable() {};
+    virtual boost::optional<T> accept(tag<T>, AstNodeVisitor& v) = 0;
+    virtual ~AstVisitable() = default;
 };
 
 template <>
 struct AstVisitable<void> {
-    virtual void accept( tag<void>, AstNodeVisitor&v ) = 0;
-    virtual ~AstVisitable() {};
+    virtual void accept(tag<void>, AstNodeVisitor& v) = 0;
+    virtual ~AstVisitable() = default;
 };
 
 template <class Types>
@@ -41,7 +45,7 @@ struct AstVisitables;
 
 template <>
 struct AstVisitables< types<> > {
-    virtual ~AstVisitables() {};
+    virtual ~AstVisitables() = default;
 };
 
 template <class T0, class...Ts>
@@ -69,7 +73,7 @@ class AstNode : public AstVisitables<supported_ast_return_types>
 template <class T>
 struct AstVisitableFailure : virtual AstVisitable<T>
 {
-    boost::optional<T> accept( tag<T>, AstNodeVisitor& ) override
+    virtual boost::optional<T> accept(tag<T>, AstNodeVisitor &) override
     {
         return {};
     }
@@ -78,7 +82,7 @@ struct AstVisitableFailure : virtual AstVisitable<T>
 template <>
 struct AstVisitableFailure<void> : virtual AstVisitable<void>
 {
-    void accept( tag<void>, AstNodeVisitor& ) override
+    virtual void accept(tag<void>, AstNodeVisitor &) override
     {
         return;
     }
@@ -135,7 +139,7 @@ class SumNode : public AstNode
 };
 
 class CompareNode : public AstNode
-              , public AstVisitablesFailAll<supported_ast_return_types>
+                  , public AstVisitablesFailAll<supported_ast_return_types>
 {
     public:
         void accept(tag<void>, AstNodeVisitor& v) override
@@ -213,6 +217,8 @@ inline boost::optional<int> AstNodeVisitor::visitValueNode(ValueNode& node)
 // -- }
 
 }
+
+#pragma clang diagnostic pop
 
 #endif
 
